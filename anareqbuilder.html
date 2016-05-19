@@ -38,15 +38,17 @@
    
 *  Et enfin, je veux que `K` ne soit *ToDo* sur le contrôleur que si j'ai un
    résultat validé pour `NA`, si `NA` est demandé, et directement sinon. Le but ici est
-   de gérer le cas où `K` a une interférence néfaste avec `NA'. Je veux notamment que
+   de gérer le cas où `K` a une interférence néfaste avec `NA`. Je veux notamment que
    les cas suivants soient gérés :
    
    *  `NA` et `K` sont demandés en même temps. `NA` seul est envoyé au contrôleur.
       Quand `NA` reçoit un résultat, `K` est demandé. Pourtant, les deux tests sont
       sur la même ligne de travail.
       
-   *  `K` seul est demandé. Il est envoyé au contrôleur. On demande `NA'. `K` est annulé
+   *  `K` seul est demandé. Il est envoyé au contrôleur. On demande `NA`. `K` est annulé
       et `NA` est demandé.
+      
+   *  Il faut que ça marche en query, et en Query Then Modify.   
    
 </xmp>
 
