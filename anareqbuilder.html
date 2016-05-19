@@ -4,12 +4,12 @@
 # Ce que je vais tenter de réaliser
 
 *  Dans un premier temps, je veux que quand je demande n'importe quelle
-   combinaison de NA, K ou CL, on envoie en plus au contrôleur de chaîne
-   le test bidon STORE afin que le tube soit stocké.
+   combinaison de `NA`, `K` ou `CL`, on envoie en plus au contrôleur de chaîne
+   le test bidon `STORE` afin que le tube soit stocké.
 
    *  Je veux que cela arrive lors de la demande initiale.
 
-   *  Je veux que ça arrive quand NA, K ou CL sont ajoutés par la suite.
+   *  Je veux que ça arrive quand `NA`, `K` ou `CL` sont ajoutés par la suite.
 
    *  Je veux que cela arrive lorsqu'un repassage automatique est demandé
       par Ganesh.
@@ -20,23 +20,33 @@
    *  Je ne veux pas être enquiquiné par un quelconque *No Value* qui
       s'afficherait dans les écrans de validation
 
-   *  Je veux que si NA, K, CL cessent d'être nécessaires, le test bidon
+   *  Je veux que si `NA`, `K`, `CL` cessent d'être nécessaires, le test bidon
       cesse lui aussi d'être nécessaire.
       
-*  Ensuite, je veux que si ALIQ est demandé, il reste Todo sur le contrôleur
+*  Ensuite, je veux que si `ALIQ` est demandé, il reste *Todo* sur le contrôleur
    de chaîne même si j'ai tapé un résultat directement dans le test. Le but
-   de ceci est de gérer le cas où ALIQ représente une action différente d'une
-   pure analyse, et qui reste d'actualité même quand ALIQ a reçu un résultat
-   par ailleurs (par exemple, ALIQ pourrait recevoir un résultat sans passer
+   de ceci est de gérer le cas où `ALIQ` représente une action différente d'une
+   pure analyse, et qui reste d'actualité même quand `ALIQ` a reçu un résultat
+   par ailleurs (par exemple, `ALIQ` pourrait recevoir un résultat sans passer
    par une liste de résultats, car la mesure est paramétrée pour taper 
-   la valeur directement dans le test.
+   la valeur directement dans le test).
    
-*  Je veux que CL cesse d'être ToDo sur le contrôleur dès qu'il a reçu
-   un résultat.
+*  Je veux que `CL` cesse d'être *ToDo* sur le contrôleur dès qu'il a reçu
+   un résultat. LE but est ici de gérer le cas des analyseurs en Query à qui
+   il ne faut répondre que les tests demandés pour lesquels on n'a pas encore
+   de résultat.
    
-*  Et enfin, je veux que K ne soit ToDo sur le contrôleur que si j'ai un
-   résultat validé pour NA, si NA est demandé, et directement sinon.
+*  Et enfin, je veux que `K` ne soit *ToDo* sur le contrôleur que si j'ai un
+   résultat validé pour `NA`, si `NA` est demandé, et directement sinon. Le but ici est
+   de gérer le cas où `K` a une interférence néfaste avec `NA'. Je veux notamment que
+   les cas suivants soient gérés :
    
+   *  `NA` et `K` sont demandés en même temps. `NA` seul est envoyé au contrôleur.
+      Quand `NA` reçoit un résultat, `K` est demandé. Pourtant, les deux tests sont
+      sur la même ligne de travail.
+      
+   *  `K` seul est demandé. Il est envoyé au contrôleur. On demande `NA'. `K` est annulé
+      et `NA` est demandé.
    
 </xmp>
 
