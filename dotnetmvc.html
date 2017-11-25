@@ -22,6 +22,8 @@ On initialise la source par
     dotnet new mvc
 ```
 
+Dans la suite de ce tutoriel, je vais utiliser mon premier projet, dénommé `FlatDatabase`.
+      
 Profitons-en pour créer un `.gitignore` et lui insérer les deux lignes suivantes correspondant aux répertoires que dotnet
 utilise pour stocker les binaires et autres artefacts de compilation :
       
@@ -31,6 +33,53 @@ utilise pour stocker les binaires et autres artefacts de compilation :
 ```
       
 Ce qui nous évitera des surprises par la suite.
+      
+# Ecrire un contrôleur
+      
+Les contrôleurs, ce sont les objets qui servent à répondre aux query des clients. Le plus simple est d'écrire un contrôleur
+qui ne répond qu'aux requêtes de type `get`, ou éventuellement `post`. 
+      
+Pour cela, on va écrire une nouvelle classe dans le répertoire `Controllers` et dans le sous-namespace du même nom. Le runtime
+retrouve automatiquement cette classe et il ne faut pas l'enregistrer pour qu'elle soit active. Elle doit évidemment dériver de
+`Controller`:
+      
+```C#
+using Microsoft.AspNetCore.Mvc;
+namespace FlatDatabase.Controllers
+{
+    public class FlatDbController : Controller
+    {
+```
+      
+Par convention, on doit suffixer le nom de la classe par Controller. Le runtime va automatiquement router les requêtes de la forme
+`http://monsite/flatdb/` vers un contrôleur de la classe `FlatDbController`. A noter que le mapping est case-insensitive.
+      
+Chacune des méthodes du contrôleur implémente une réponse à un query. Le nom de la méthode est retrouvé depuis l'URL, donc un query
+de la forme `http://monsite/flatdb/set` va appeler la méthode suivante :
+
+```C#
+    public async Task<Item> Set(string token, string id, string TypeId, string SubTypeId)
+```
+
+La méthode définit les paramètres dont elle a besoin, ils seront retrouvés despuis les arguments de l'URL. Les arguments non
+présents dans l'URL reçoivent leur valeur par défaut. Les arguments surnuméraires dans l'URL sont ignorés et ne provoquent pas
+d'erreur d'exécution.
+      
+La méthode renvoie ce qui sera répondu au query. Si c'est un objet, il sera sérialisé en json. Il est aussi possible de demander
+à une vue de formater du html. Il est possible mais pas obligatoire d'en faire une méthode asynchrone ; les méthodes asynchrones
+sont moins gourmandes en ressources puisqu'il ne faut pas systématiquement créer de nouveaux threads, mais c'est assez indifférent
+dans les serveurs à faible trafic.
+
+## Questions ouvertes
+      
+*  Il n'est pas encore clair quand un contrôleur est instancié. Je ne sais pas si un nouveau contrôleur est créé pour chaque requête,
+   ou s'ils sont cachés. Notamment il n'est pas encore clair si deux méthodes du même contrôleur peuvent être appelées concouramment
+   dans deux threads, ou uniquemenet dans un même thread si elles sont asynchrones.
+     
+* Lorsqu'une méthode fournit un objet, il ne semble pas possible de renvoyer une erreur http. Il serait pratique que ma méthode `set`
+  puisse signaler que l'utilisateur n'a pas d'autorisation simplement en lançant une exception. Pour le moment, laisser passer une
+  exception renvoie systématiquement à une page d'erreur. Il est possible qu'il existe un système de filtre pour convertir une
+  exception comme HttpErrorReturnException en un code de retour, mais je n'ai pas encore trouvé.
       
 # Voilà c'est tout
       
