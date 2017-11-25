@@ -24,7 +24,7 @@ On initialise la source par
 
 Dans la suite de ce tutoriel, je vais utiliser mon premier projet, dénommé `FlatDatabase`.
       
-Profitons-en pour créer un `.gitignore` et lui insérer les deux lignes suivantes correspondant aux répertoires que dotnet
+Profitons-en pour créer immédiatement un `.gitignore` et lui insérer les deux lignes suivantes correspondant aux répertoires que dotnet
 utilise pour stocker les binaires et autres artefacts de compilation :
       
 ```
@@ -43,7 +43,7 @@ Pour cela, on va écrire une nouvelle classe dans le répertoire `Controllers` e
 retrouve automatiquement cette classe et il ne faut pas l'enregistrer pour qu'elle soit active. Elle doit évidemment dériver de
 `Controller`:
       
-```C#
+```
 using Microsoft.AspNetCore.Mvc;
 namespace FlatDatabase.Controllers
 {
@@ -51,13 +51,13 @@ namespace FlatDatabase.Controllers
     {
 ```
       
-Par convention, on doit suffixer le nom de la classe par Controller. Le runtime va automatiquement router les requêtes de la forme
+Par convention, on doit suffixer le nom de la classe par `Controller`. Le runtime va automatiquement router les requêtes de la forme
 `http://monsite/flatdb/` vers un contrôleur de la classe `FlatDbController`. A noter que le mapping est case-insensitive.
       
 Chacune des méthodes du contrôleur implémente une réponse à un query. Le nom de la méthode est retrouvé depuis l'URL, donc un query
 de la forme `http://monsite/flatdb/set` va appeler la méthode suivante :
 
-```C#
+```
     public async Task<Item> Set(string token, string id, string TypeId, string SubTypeId)
 ```
 
@@ -65,8 +65,9 @@ La méthode définit les paramètres dont elle a besoin, ils seront retrouvés d
 présents dans l'URL reçoivent leur valeur par défaut. Les arguments surnuméraires dans l'URL sont ignorés et ne provoquent pas
 d'erreur d'exécution.
       
-La méthode renvoie ce qui sera répondu au query. Si c'est un objet, il sera sérialisé en json. Il est aussi possible de demander
-à une vue de formater du html. Il est possible mais pas obligatoire d'en faire une méthode asynchrone ; les méthodes asynchrones
+La méthode renvoie ce qui sera répondu au query. Si c'est un objet, il sera sérialisé en json. Dans ce cas, il est préférable qu'il
+s'agisse d'un objet implémentant un modèle.
+Il est aussi possible de demander à une vue de formater du html. Il est possible mais pas obligatoire d'en faire une méthode asynchrone ; les méthodes asynchrones
 sont moins gourmandes en ressources puisqu'il ne faut pas systématiquement créer de nouveaux threads, mais c'est assez indifférent
 dans les serveurs à faible trafic.
 
@@ -78,8 +79,29 @@ dans les serveurs à faible trafic.
      
 * Lorsqu'une méthode fournit un objet, il ne semble pas possible de renvoyer une erreur http. Il serait pratique que ma méthode `set`
   puisse signaler que l'utilisateur n'a pas d'autorisation simplement en lançant une exception. Pour le moment, laisser passer une
-  exception renvoie systématiquement à une page d'erreur. Il est possible qu'il existe un système de filtre pour convertir une
-  exception comme HttpErrorReturnException en un code de retour, mais je n'ai pas encore trouvé.
+  exception renvoie systématiquement à une page d'erreur. Il est vraisemblable qu'il existe un système de filtre pour convertir une
+  exception custom comme `HttpErrorReturnException` en un code de retour, mais je n'ai pas encore trouvé.
+
+# Ecrire un modèle
+      
+Un modèle est un objet représentant les concepts manipulés par l'application. Ils sont généralement stockés dans une base de 
+données en fonction des desiderata des contrôleurs.
+      
+# Ecrire un contexte de base de données
+      
+Le contexte de base de données permet d'orchestrer les opérations de stockage et de chargement d'objets du modèle depuis une base
+de données.
+      
+## Créer les scripts de migration
+      
+L'entity framework crée automatiquement des classes qui capturent le schéma de la base de données. Ces classes s'appellent des
+migrations et permettent de créer une base de données vide, ou de lettre à jour le schéma vers une version plus récente.
+      
+## Créer la base de données en ligne de commande
+      
+## Créer la base de données programmatiquement au démarrage
+      
+Ce n'est pas encore clair...
       
 # Voilà c'est tout
       
