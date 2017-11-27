@@ -4,12 +4,16 @@
       <title>Tutoriel DotNet MVC</title>
 </head>
 <body>
-<xmp theme="cerulean" style="display:none;">
+<xmp theme="spacelab" style="display:none;">
 
 Le but de ce tutoriel est multiple. D'une part je voudrais évidemment communiquer ce que j'ai appris dans l'écriture d'une application
 MVC, mais je voudrais surtout éviter de tomber dans le piège de tous les autres tutoriels que j'ai rencontrés jusqu'à présent. En
 gros, surtout ne pas dire "Voyez comme c'est facile il suffit de cliquer sur ce bouton" et plutôt expliquer le pourquoi du comment
 de chaque manipulation.
+
+Il est généralement conseillé de faire très attention, car MVC utilise intensément de l'injection de dépendances, et cela ne fonctionne
+que lorsque les classes définissent les bonnes méthodes. Quand ça ne marche pas, le compilateur ne se plaindra pas et on aura des
+erreurs runtime, ou bien il ne se passera simplement rien.
 
 # Initialisation d'un projet
 
@@ -19,25 +23,31 @@ l'application qu'on construit. Il est donc important qu'il soit correctement cap
 On initialise la source par
 
 ```bash
-    dotnet new mvc
+dotnet new mvc
 ```
 
 Dans la suite de ce tutoriel, je vais utiliser mon premier projet, dénommé `FlatDatabase`.
       
-Profitons-en pour créer immédiatement un `.gitignore` et lui insérer les deux lignes suivantes correspondant aux répertoires que dotnet
-utilise pour stocker les binaires et autres artefacts de compilation :
+Profitons-en pour créer immédiatement un `.gitignore` et lui insérer les lignes suivantes correspondant aux répertoires que dotnet
+utilise pour stocker les binaires et autres artefacts de compilation, et le répertoire data qui contient la base de données de production :
       
 ```
-    /bin/
-    /obj/
+/bin/
+/obj/
+/data/
 ```
       
 Ce qui nous évitera des surprises par la suite.
-      
+
+## Structure du répertoire source
+
+*  Le sous-répertoire `Controllers` contient les _contrôleurs_, c'est-à-dire des objets qui vont répondre aux solliciations
+   des clients.
+
 # Ecrire un contrôleur
       
 Les contrôleurs, ce sont les objets qui servent à répondre aux query des clients. Le plus simple est d'écrire un contrôleur
-qui ne répond qu'aux requêtes de type `get`, ou éventuellement `post`. 
+qui ne répond qu'aux requêtes de type `get`, ou éventuellement `post`. On évite ainsi de devoir annoter les méthodes.
       
 Pour cela, on va écrire une nouvelle classe dans le répertoire `Controllers` et dans le sous-namespace du même nom. Le runtime
 retrouve automatiquement cette classe et il ne faut pas l'enregistrer pour qu'elle soit active. Elle doit évidemment dériver de
@@ -71,27 +81,133 @@ Il est aussi possible de demander à une vue de formater du html. Il est possibl
 sont moins gourmandes en ressources puisqu'il ne faut pas systématiquement créer de nouveaux threads, mais c'est assez indifférent
 dans les serveurs à faible trafic.
 
+## Mapper des URL vers des contrôleurs
+
+Par défaut, une URL de type `http://monsite/ctrl/meth/` sera automatiquement routée vers la méthode `Meth` de la classe `CtrlController`. 
+Ceci parce que l'initalisation de l'application (dans `Startup.cs`) contient une route globale :
+
+```
+public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+{
+    ...
+    app.UseMvc (routes => routes.MapRoute (name: "default", template: "{controller=Home}/{action=Index}/{id?}"));
+}
+```
+
+Il est évidemment également possible de mapper d'autres routes, soit en mettant des annotations sur les contrôleurs, soit en mappant
+explicitement d'autres routes.
+
 ## Questions ouvertes
       
 *  Il n'est pas encore clair quand un contrôleur est instancié. Je ne sais pas si un nouveau contrôleur est créé pour chaque requête,
    ou s'ils sont cachés. Notamment il n'est pas encore clair si deux méthodes du même contrôleur peuvent être appelées concouramment
    dans deux threads, ou uniquemenet dans un même thread si elles sont asynchrones.
      
-* Lorsqu'une méthode fournit un objet, il ne semble pas possible de renvoyer une erreur http. Il serait pratique que ma méthode `set`
-  puisse signaler que l'utilisateur n'a pas d'autorisation simplement en lançant une exception. Pour le moment, laisser passer une
-  exception renvoie systématiquement à une page d'erreur. Il est vraisemblable qu'il existe un système de filtre pour convertir une
-  exception custom comme `HttpErrorReturnException` en un code de retour, mais je n'ai pas encore trouvé.
+*  Lorsqu'une méthode fournit un objet, il ne semble pas possible de renvoyer une erreur http. Il serait pratique que ma méthode `set`
+   puisse signaler que l'utilisateur n'a pas d'autorisation simplement en lançant une exception. Pour le moment, laisser passer une
+   exception renvoie systématiquement à une page d'erreur. Il est vraisemblable qu'il existe un système de filtre pour convertir une
+   exception custom comme `HttpErrorReturnException` en un code de retour, mais je n'ai pas encore trouvé.
 
 # Ecrire un modèle
       
-Un modèle est un objet représentant les concepts manipulés par l'application. Ils sont généralement stockés dans une base de 
+Un modèle est un objet représentant les objets persistants manipulés par l'application. Ils sont généralement stockés dans une base de 
 données en fonction des desiderata des contrôleurs.
+
+Pour écrire un modèle, on crée une classe qu'on met dans le sous-répertoire `Models`. Il n'est pas nécessaire que la classe dérive d'une
+base particulière. Le modèle exporte des propriétés par un `{ get; set; }`:
+
+```
+public class Item
+{
+    public long Id { get; set; }
+    public long Database { get; set; }
+    public string ItemId { get; set; }
+```
+
+La propriété dénommée `Id` sert d'identité primaire aux objets, c'est important quand on stocke les modèmes dans la base de données.
+
+## Questions ouvertes
+
+*  Il n'est pas encore clair comment l'Entity Framework reconnaît la clé primaire, notamment si c'est via le nom de la propriété ou
+   de sa position dans la liste.
+
+*  Il n'est pas encore clair s'il est intéressant que les modèles possèdent des méthodes pour modifier les données ou s'il vaut mieux
+   qu'il se contentent d'exposer le contenu des tables et concentrer les opérations dans des contrôleurs ou dans des classes à part.
       
 # Ecrire un contexte de base de données
       
 Le contexte de base de données permet d'orchestrer les opérations de stockage et de chargement d'objets du modèle depuis une base
 de données.
+
+On définit en général une unique classe de contexte, que l'on met dans les sous-répertoire `Models`. 
+Le contexte dérive de la classe de base `Microsoft.EntityFrameworkCore.DbContext` : 
+
+```
+using Microsoft.EntityFrameworkCore;
+
+namespace FlatDatabase.Models
+{
+    public class FlatDbContext : DbContext
+    {
+
+```
+
+On définit deux constructeurs. 
+Je ne me rappelle plus exactement pourquoi j'ai dû définir les deux, mais si je ne le faisais pas je me retrouvais
+avec des erreurs runtime je ne sais plus où:
+
+```
+    public FlatDbContext(DbContextOptions<FlatDbContext> options)
+    : base(options)
+    {
+    }
+
+    public FlatDbContext()
+    : base()
+    {
+    }
+```
       
+Ensuite, le contexte doit exposer les différents modèles qu'il gère dans des propriétés. Ces propriétés permettent de savoir
+quels modèles sont présents dans la base de données, et vont servir à créer automatiquement les tables.
+
+```
+    public DbSet<Item> Item { get; set; }
+```
+
+Ces DbSet reconnaissent des requêtes de type LINQ. Il est conseillé d'utiliser les versions asynchrones:
+
+```
+   var item = await _Context.Item.SingleOrDefaultAsync(m => m.Database == _DatabaseId && m.ItemId == Id);
+```
+
+## Injecter le contexte dans l'application
+
+C'est au moment de la création de l'application qu'on va indiquer qu'on utilise ce contexte, et le mapper vers
+une implémentation de base de données. On peut faire cela de façon hard-codée :
+
+```
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddMvc();
+        services.AddDbContext<FlatDbContext> (options => options.UseSqlite ("Data Source=flat.db"));
+    }
+```
+
+Ou bien en utilisant le app.config.
+
+## Injecter les contextes dans les contrôleurs
+
+Les contrôleurs doivent connaître les contextes s'ils veulent accéder à la base de données. Le contrôleur reçoit le contexte
+dans son constructeur s'il a la bonne signature.
+
+```
+public class FlatDbController : Controller
+{
+    FlatDbContext _context;
+    public FlatDbController (FlatDbContext aContext) => _context = aContext;
+```
+
 ## Créer les scripts de migration
       
 L'entity framework crée automatiquement des classes qui capturent le schéma de la base de données. Ces classes s'appellent des
@@ -102,7 +218,21 @@ migrations et permettent de créer une base de données vide, ou de lettre à jo
 ## Créer la base de données programmatiquement au démarrage
       
 Ce n'est pas encore clair...
-      
+
+## Questions ouvertes
+
+*  Je ne sais pas encore comment faire pour utiliser une autre base de données lors des tests. Idéalement, on aurait une base de données empty.db qui est 
+   gérée par les outils de migration de l'entity framework, base que l'on peut déployer sur site, mais qui n'est pas réellement utilisée (on utilise une
+   autre base, dans /data/
+   
+*  Je ne sais pas encore comment faire pour spécifier le nom complet de la base de données, qui doit être data/database.db en production. Notamment,
+   il faut que sous Linux le séparateur soit / et sous Windows il doit être \
+   
+# Divers trucs qui traînent
+
+*  Il ne semble pas évident de passer des arguments sur la ligne de commande. Les arguments sont passés au moteur Kestrel qui ne les aime pas trop. Pour le moment,
+   j'ai écrit du code dans la méthode Main qui retire les arguments en se basant sur un préfixe.
+   
 # Voilà c'est tout
       
 Pour le moment...
