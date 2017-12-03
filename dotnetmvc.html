@@ -2,6 +2,14 @@
 <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
       <title>Tutoriel DotNet MVC</title>
+	  <style>
+	  	h1:before
+		{
+    		content:' ';
+    		display:block;
+    		border:2px solid black;
+		}
+	  </style>
 </head>
 <body>
 <xmp theme="spacelab" style="display:none;">
@@ -11,6 +19,8 @@ MVC, mais je voudrais surtout éviter de tomber dans le piège de tous les autre
 gros, surtout ne pas dire "Voyez comme c'est facile il suffit de cliquer sur ce bouton" et plutôt expliquer le pourquoi du comment
 de chaque manipulation.
 
+# Prolégomènes
+
 Il est généralement conseillé de faire très attention, car MVC utilise intensément de l'injection de dépendances, et cela ne fonctionne
 que lorsque les classes définissent les bonnes méthodes. Quand ça ne marche pas, le compilateur ne se plaindra pas et on aura des
 erreurs runtime, ou bien il ne se passera simplement rien.
@@ -18,7 +28,8 @@ erreurs runtime, ou bien il ne se passera simplement rien.
 # Initialisation d'un projet
 
 Commencer dans un répertoire vide. Attention, le nom du répertoire est important, car il va servir de base pour le namespace de 
-l'application qu'on construit. Il est donc important qu'il soit correctement capitalisé.
+l'application qu'on construit si on ne nomme pas explicitement le projet dans la ligne de commande. 
+Il est donc important qu'il soit correctement capitalisé.
 
 On initialise la source par
 
@@ -29,22 +40,28 @@ dotnet new mvc
 Dans la suite de ce tutoriel, je vais utiliser mon premier projet, dénommé `FlatDatabase`.
       
 Profitons-en pour créer immédiatement un `.gitignore` et lui insérer les lignes suivantes correspondant aux répertoires que dotnet
-utilise pour stocker les binaires et autres artefacts de compilation, et le répertoire data qui contient la base de données de production :
+utilise pour stocker les binaires et autres artefacts de compilation, les librairies importées par _CodePiecer_ et le répertoire qui 
+contient la base de données de production :
       
 ```
 /bin/
 /obj/
+/lib/
 /data/
 ```
       
-Ce qui nous évitera des surprises par la suite.
+Ce qui nous évitera des surprises par la suite...
 
 ## Structure du répertoire source
 
-*  Le sous-répertoire `Controllers` contient les _contrôleurs_, c'est-à-dire des objets qui vont répondre aux solliciations
+*  Le fichier `Program.cs` contient le programme principal et notamment la méthode `Main`.
+*  Le sous-répertoire `Models` contient les [modèles](#model), c'est-à-dire des objets à présenter à l'utilisateur, généralement persistants dans la base de données.
+*  Le sous-répertoire `Controllers` contient les [contrôleurs](#controller), c'est-à-dire des objets qui vont répondre aux solliciations
    des clients.
+*  Le sous-répertoire `Views` contient les [vues](#view), c'est-à-dire des objets qui vont formater les données (typiquement des modèles)
+   en fonction des besoins des contrôleurs.
 
-# Ecrire un contrôleur
+# <a name="controller"></a>Ecrire un contrôleur
       
 Les contrôleurs, ce sont les objets qui servent à répondre aux query des clients. Le plus simple est d'écrire un contrôleur
 qui ne répond qu'aux requêtes de type `get`, ou éventuellement `post`. On évite ainsi de devoir annoter les méthodes.
@@ -75,9 +92,21 @@ La méthode définit les paramètres dont elle a besoin, ils seront retrouvés d
 présents dans l'URL reçoivent leur valeur par défaut. Les arguments surnuméraires dans l'URL sont ignorés et ne provoquent pas
 d'erreur d'exécution.
       
-La méthode renvoie ce qui sera répondu au query. Si c'est un objet, il sera sérialisé en json. Dans ce cas, il est préférable qu'il
-s'agisse d'un objet implémentant un modèle.
-Il est aussi possible de demander à une vue de formater du html. Il est possible mais pas obligatoire d'en faire une méthode asynchrone ; les méthodes asynchrones
+La méthode renvoie ce qui sera répondu au query. MVC supporte pas mal de types en retour.
+
+*  Cela peut être un objet du modèle, qu sera sérialisé en json.
+*  Cela peut être une vue, qui sera formatée.
+*  Cela peut être un code d'erreur http.
+
+Par contre, il ne semble pas autorisé de laisser passer une exception pour qu'elle soit automatiquement transformée en code 
+http. Il n'est pas totalement impossible qu'un filtre d'erreur puisse être écrit pour renvoyer certaines erreurs comme un code
+http. Il serait alors possible qu'un contrôleur fasse
+
+```
+    throw new HttpErrorException (418, "I'm a teapot");
+```
+	
+Il est possible mais pas obligatoire de faire une méthode asynchrone ; les méthodes asynchrones
 sont moins gourmandes en ressources puisqu'il ne faut pas systématiquement créer de nouveaux threads, mais c'est assez indifférent
 dans les serveurs à faible trafic.
 
@@ -94,24 +123,29 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env)
 }
 ```
 
-Il est évidemment également possible de mapper d'autres routes, soit en mettant des annotations sur les contrôleurs, soit en mappant
-explicitement d'autres routes.
+Il est évidemment également possible de mapper d'autres routes, soit en mettant des annotations sur les contrôleurs, soit en ajoutant
+explicitement d'autres règles via MapRoute.
 
 ## Questions ouvertes
       
 *  Il n'est pas encore clair quand un contrôleur est instancié. Je ne sais pas si un nouveau contrôleur est créé pour chaque requête,
    ou s'ils sont cachés. Notamment il n'est pas encore clair si deux méthodes du même contrôleur peuvent être appelées concouramment
-   dans deux threads, ou uniquemenet dans un même thread si elles sont asynchrones.
+   dans deux threads, ou uniquement dans un même thread si elles sont asynchrones.
      
 *  Lorsqu'une méthode fournit un objet, il ne semble pas possible de renvoyer une erreur http. Il serait pratique que ma méthode `set`
    puisse signaler que l'utilisateur n'a pas d'autorisation simplement en lançant une exception. Pour le moment, laisser passer une
    exception renvoie systématiquement à une page d'erreur. Il est vraisemblable qu'il existe un système de filtre pour convertir une
    exception custom comme `HttpErrorReturnException` en un code de retour, mais je n'ai pas encore trouvé.
+   
+   *  Il semble qu'il faut écrire un _middleware_ qui intercepte les erreurs. Un exemple de tel middleware est exposé ici:
+      [https://dusted.codes/error-handling-in-aspnet-core]
+	  
 
-# Ecrire un modèle
+# <a name="model"></a>Ecrire un modèle
       
 Un modèle est un objet représentant les objets persistants manipulés par l'application. Ils sont généralement stockés dans une base de 
-données en fonction des desiderata des contrôleurs.
+données en fonction des desiderata des contrôleurs. Certains objets ne sont pas persistants, MVC utilise notamment un `ErrorViewModel`
+qui sert à peupler les vues d'erreur.
 
 Pour écrire un modèle, on crée une classe qu'on met dans le sous-répertoire `Models`. Il n'est pas nécessaire que la classe dérive d'une
 base particulière. Le modèle exporte des propriétés par un `{ get; set; }`:
@@ -124,7 +158,7 @@ public class Item
     public string ItemId { get; set; }
 ```
 
-La propriété dénommée `Id` sert d'identité primaire aux objets, c'est important quand on stocke les modèmes dans la base de données.
+La propriété dénommée `Id` sert d'identité primaire aux objets, c'est important quand on stocke les modèles dans la base de données.
 
 ## Questions ouvertes
 
@@ -168,7 +202,7 @@ avec des erreurs runtime je ne sais plus où:
     }
 ```
       
-Ensuite, le contexte doit exposer les différents modèles qu'il gère dans des propriétés. Ces propriétés permettent de savoir
+Ensuite, le contexte doit exposer les différents modèles qu'il gère, via des propriétés. Ces propriétés permettent de savoir
 quels modèles sont présents dans la base de données, et vont servir à créer automatiquement les tables.
 
 ```
@@ -194,11 +228,16 @@ une implémentation de base de données. On peut faire cela de façon hard-codé
     }
 ```
 
-Ou bien en utilisant le app.config.
+Ou bien en utilisant le `app.config` (mais on le sait, je ne suis pas fan de `app.config`). C'est probablement ici aussi que l'on va
+créer et/ou migrer la base de données.
 
-## Injecter les contextes dans les contrôleurs
+Faire attention au fait que si on spécifie simplement `flat.db` comme nom de base de données, elle sera au même endroit que les
+exécutables. Il est préférable de dire `/data/flat.db`. Ceci permettra aussi, plus tard, de mapper le répertoire `/data/` vers un
+volume dans Docker.
 
-Les contrôleurs doivent connaître les contextes s'ils veulent accéder à la base de données. Le contrôleur reçoit le contexte
+## Injecter le contexte dans les contrôleurs
+
+Les contrôleurs doivent connaître le contexte s'ils veulent accéder à la base de données. Le contrôleur reçoit le contexte
 dans son constructeur s'il a la bonne signature.
 
 ```

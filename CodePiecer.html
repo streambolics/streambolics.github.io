@@ -1,0 +1,63 @@
+<html>
+<head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Text Transformation Server</title>
+	  <style>
+	  	h1:before
+		{
+    		content:' ';
+    		display:block;
+    		border:2px solid black;
+		}
+	  </style>
+</head>
+<body>
+<xmp theme="spacelab" style="display:none;">
+
+# Prolégomènes
+
+Depuis quelque temps déjà, les langages ne contiennent plus de préprocesseur. Il paraît que c'est dangereux.
+En conséquence, j'ai développé moi-même quelques générateurs de code.
+
+Le problème est maintenant qu'il faudrait intégrer ces générateurs de code dans les IDE. Evidemment, chaque IDE a sa propre conception
+de ce qu'est un plug-in. Delphi veut que les plug-ins soient écrits en Delphi (on peut le comprendre), Visual Studio les veut en .NET
+et Visual Studio Code les veut en Javascript/Typescript.
+
+Je désire régler le problème une fois pour toutes en proposant un protocole...
+
+# Principe du protocole
+
+La transformation de texte s'effectue en exécutant un query http de la forme suivante :
+
+    http://server:port/transformer?spec=...&input=...&infile=...
+	
+*   `server:port` est le serveur et le port pour contacter la machine. Il existe un port par défaut.
+*   `spec` est la spécification de la transformation. Cette spécification est celle décrite dans la spécification des transformations
+    de texte.
+*   `input` est le texte à transformer. Ce texte peut aussi être mis dans la partie `post` du query si elle est fort longue.
+*   `infile` est le nom du fichier à transformer. Dans ce cas, l'input est pris de ce fichier.
+*   `outfile` est le nom du fichier à créer. Ce fichier ne peut pas déjà exister.
+
+# Exploitation du protocole
+
+Le protocole peut être exploité par curl ou par un plug-in. Il "suffit" d'écrire une unique fois un plug-in pour supporter tout type de
+transformation. On pourra aussi écrire 	
+
+Le protocole devrait être supporté par :
+
+*   Curl et wget
+*   Les plug-ins de différents IDE au fur et à mesure des besoins
+*   Un utilitaire ligne de commande (qui peut invoquer curl...)
+
+# Implémentation du protocole
+
+## Par BuildAgent (Delphi)
+
+Cela me semble la voie la plus importante vu que les filtres les plus utiles comme CodePiecer sont déjà implémentés en Delphi. Enfin,
+j'espère qu'ils ne sont pas perdus...
+	
+</xmp>
+
+<script src="http://strapdownjs.com/v/0.2/strapdown.js"></script>  
+
+</body></html>
