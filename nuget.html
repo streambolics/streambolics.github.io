@@ -1,0 +1,72 @@
+<html>
+<head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Tutoriel NuGet</title>
+	  <style>
+	  	h1:before
+		{
+    		content:' ';
+    		display:block;
+    		border:2px solid black;
+		}
+	  </style>
+</head>
+<body>
+<xmp theme="spacelab" style="display:none;">
+
+
+# Prolégomènes
+
+NuGet est - à mon sens - un énième exemple d'un machin typique du monde libre : tu es libre de l'utiliser, mais quand tu le fais tu es prié te conformer aveuglément
+au modèle prévu par le développeur initial.
+
+Le modèle prévu par le développeur c'est que les dépendances NuGet se font au niveau de la solution et non au niveau du projet. Il en résulte que ma méthode de développement
+où j'ai un unique répertoire avec plusieurs solutions qui se partagent les projets de librairie se casse magistralement la tronche dès que je veux qu'un des mes projets
+de librairie dépendent d'une librairie gérée par NuGet.
+
+Jusqu'à présent j'ai réussi à résister, mais ça va devenir de plus en plus compliqué.
+
+# Ce que je	vais tenter
+
+Ce tutoriel documente mes tentatives pour faire fonctionner le modèle suivant de programmation :
+
+*   Je désire développer une applictation (et je pars sur mon exemple habituel, `FlatDatabase`)
+*   FlatDatabase dépend d'un certain nombre de fonctionnalités génériques qui sont actuellement intégrées directement dans le projet,
+    mais dont la vraie place est dans une librairie, qui est évidemment `Streambolics.Core`.
+
+Je vais donc tenter de faire en sorte que la librairie (en l'occurrence Streambolics.Core) devienne un module NuGet. Je vais évidemment me prendre de plein fouet le
+fait que mon modèle de développement est explicitement différent de ce que les concepteurs de NuGet ont imaginé. En clair :
+
+*   Je travaille _simultanément_ sur l'application et sur la librairie.
+*   Il va donc arriver fréquemment que je modifie une source de la librairie et que je veuille voir le résultat dans l'application.
+
+Il va donc falloir automatiser le fonctionnement suivant :
+
+1.	Faire un `dotnet build` de la librairie (ou plus probablement encore un `dotnet publish`.
+2.  Reconstruire le package NuGet en espérant qu'on puisse lui donner une version nommée `alpha` of `fast` et non explicitement un numéro de version qu'il faudra
+    aller taper de façon incongrue dans le fichier .nuget (qui est _évidemment_ du XML au lieu d'un truc raisonnable).
+3.  Publier le package sur un store privé. Heureusement qu'il semble assez facile d'avoir un store privé constitué d'un simple répertoire partagé.
+    
+# Création initiale du package
+
+La commande `nuget spec` permet de créer le fichier .nuspec initial. En grande partie ça ne sert à rien parce qu'il ne le remplit pas vraiment efficacement.
+Donc on va le faire quand-même mais il va falloir changer pas mal de choses dans le fichier généré.
+
+# Build du package
+
+Nuget peut théoriquement créer lui-même les binaires etc à partir du fichier .csproj, mais évidemment ça ne marche que si Visual Studio et MsBuild sont installés.
+Quand on travaille sous dotnet core, il faut explicitement citer le nom du fichier .nuspec:
+
+    nuspec pack Streambolics.Core.nuspec
+	
+Si on essaie de faire seulement
+
+    nuspec pack
+	
+nuspec va tenter d'exploiter le fichier .csproj et se ramasser lamentablement avec un message d'erreur tellement générique qu'il en est inutile.
+	
+</xmp>
+
+<script src="http://strapdownjs.com/v/0.2/strapdown.js"></script>  
+
+</body></html>
